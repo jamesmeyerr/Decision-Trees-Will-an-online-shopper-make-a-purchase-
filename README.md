@@ -4,6 +4,28 @@ In physical retailing, a salesperson can offer a range of customized alternative
 The dataset was formed so that each session would belong to a different user in a 1-year period to avoid any tendency to a specific campaign, special day, user profile, or period.
 The objective is to predict whether a customer will make a purchase in this session. Every time a web page is served to the user, the online store will make a prediction of how likely it is that the customer will purchase. The store can use this probability to customize buying offers, provide discounts, offer purchase advice, etc.
 
+Feature Description
+
+- ADMINISTRATIVE - Number of pages visited by the visitor about account management
+- ADMINISTRATIVE_DURATION - Total amount of time (in seconds) spent by the visitor on account management related pages
+- INFORMATIONAL - Number of pages visited by the visitor about Web site, communication and address information of the shopping site
+- INFORMATIONAL_DURATION - Total amount of time (in seconds) spent by the visitor on informational pages
+- PRODUCT_RELATED - Number of pages visited by visitor about product related pages
+- PRODUCT_RELATED_DURATION - Total amount of time (in seconds) spent by the visitor on product related pages
+- BOUNCE_RATE - Average bounce rate value of the pages visited by the visitor
+- EXIT_RATE - Average exit rate value of the pages visited by the visitor
+- PAGE_VALUE - Average page value of the pages visited by the visitor
+- SPECIAL_DAY - Closeness of the site visiting time to a special day
+- OPERATINGSYSTEMS - Operating system of the visitor
+- BROWSER - Browser of the visitor
+- REGION - Geographic region from which the session has been started by the visitor
+- TRAFFICTYPE - Traffic source by which the visitor has arrived at the Web site (e.g., banner, SMS, direct)
+- VISITORTYPE - Visitor type as “New Visitor,” “Returning Visitor,” and “Other”
+- WEEKEND - Boolean value indicating whether the date of the visit is weekend
+- MONTH - Month value of the visit date
+- REVENUE - Class label indicating whether the visit has been finalized with a transaction
+
+
 Notes on Selected Features
 
 (ADMINISTRATIVE, ADMINISTRATIVE_DURATION, INFORMATIONAL, INFORMATIONAL_DURATION, PRODUCT_RELATED, PRODUCT_RELATED_DURATION)
@@ -17,3 +39,5 @@ Notes on Selected Features
 
 (OPERATINGSYSTEMS, BROWSER, REGION, TRAFFICTYPE, VISITORTYPE) 
 - Attributes of specific user session
+
+Goal is to create a decision tree which can predict class membership of the “Revenue” variable.

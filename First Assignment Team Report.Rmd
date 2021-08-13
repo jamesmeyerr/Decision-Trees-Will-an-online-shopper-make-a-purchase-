@@ -1,0 +1,270 @@
+---
+title: "Data Science Assignment 1"
+author: "James Meyer"
+date: "17/02/2020"
+---
+
+# Loading Libraries
+
+```{r load libraries, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE, fig.show = 'hide'}
+rm(list = ls())
+
+# load libraries
+library(tidyverse)
+library(caTools)
+library(rpart)
+library(rpart.plot)
+library(tree)
+library(partykit)
+library(ggparty)
+library(kableExtra)
+```
+
+\newpage
+
+# Loading Data
+
+```{r Load Data, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE, fig.show = 'hide'}
+setwd("/Users/James/OneDrive - Bond University/201/Data Science/dsjames/")
+online_data <- read_csv("shopper_data.csv")
+```
+
+\newpage
+
+# Cleaning Data
+
+```{r Clean Data, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE, fig.show = 'hide'}
+str(online_data)
+
+numeric_cols <-                 #make all variables besides target numeric variables
+  c(
+    "PRODUCT_RELATED_DURATION",
+    "BOUNCE_RATE",
+    "EXIT_RATE",
+    "ADMINISTRATIVE",
+    "ADMINISTRATIVE_DURATION",
+    "INFORMATIONAL",
+    "INFORMATIONAL_DURATION",
+    "PRODUCT_RELATED",
+    "PAGE_VALUE",
+    "SPECIAL_DAY",
+    "OPERATINGSYSTEMS",
+    "BROWSER",
+    "REGION",
+    "TRAFFICTYPE"
+  )
+online_data[, numeric_cols]  <-
+  lapply(online_data[, numeric_cols], as.numeric)
+
+factor_cols <-                 #make variables with levels factors
+  c(
+    "MONTH",
+    "VISITORTYPE",
+    "WEEKEND",
+    "REVENUE"
+  )
+online_data[, factor_cols]  <-
+  lapply(online_data[, factor_cols], as.factor)
+```
+
+\newpage
+
+# Visualise Data
+
+```{r Visualise Data, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE, fig.show = 'hide'}
+#data visualisations
+summary(online_data)
+str(online_data)
+colMeans(is.na(online_data))
+
+plot(x = online_data$MONTH, y = online_data$PAGE_VALUE)
+plot(x = online_data$MONTH, y = online_data$BOUNCE_RATE)
+```
+
+\newpage
+
+# Set Test and Train Data
+
+```{r Set Test and Train Data, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE}
+set.seed(123)
+
+split_data <- sample.split(online_data$REVENUE, SplitRatio = .8)
+
+train_data <- subset(online_data, split_data == TRUE)
+test_data <- subset(online_data, split_data == FALSE)
+
+data_prop <- function(data) {
+  prop_num <- table(data$REVENUE)
+  prop_perc <- prop.table(table(data$REVENUE))
+  list(prop_num, prop_perc)
+}
+
+data_prop(train_data)
+data_prop(test_data)
+```
+
+\newpage
+
+# Modeling
+## Model 1
+
+```{r Tree Model, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE, fig.show = 'hide'}
+model1 <- rpart(REVENUE ~ .,
+              data = train_data,
+              method = "class")
+
+rpart.plot(model1, extra = 104)
+
+model_1_prediction <-
+  predict(object = model1,
+          newdata = test_data,
+          type = "class")
+
+mean(model_1_prediction == test_data$REVENUE)
+
+table(Predicted = model_1_prediction, Actual = test_data$REVENUE)
+
+summary(model1)   
+```
+
+\newpage
+
+## Model 2
+
+```{r Pruned Tree, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE, fig.show = 'hide'}
+model2 <-
+  tree(formula = REVENUE ~ ., 
+       data = train_data)
+
+#Pruned tree with just 4 splits
+pruned_tree <- prune.tree(tree = model2, best = 4)
+
+model_2_prediction <-
+  predict(object = pruned_tree,
+          newdata = test_data,
+          type = "class")
+
+mean(model_2_prediction == test_data$REVENUE)
+
+plot(pruned_tree, main = "Pruned Tree (4 splits)")
+text(pruned_tree)
+
+table(Predicted = model_2_prediction, Actual = test_data$REVENUE)
+```
+
+\newpage
+
+## Model 3
+
+```{r Model MakeTree, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE, fig.show = 'hide'}
+#function for ctree
+make_tree <- function(online_data, my_formula)
+{
+  my_tree <- ctree(formula = my_formula, data = online_data)
+  return(my_tree)
+}
+#function for tree predictions
+predict_tree <-
+  function(my_model, online_data, my_type = "response")
+  {
+    my_prediction <-
+      predict(my_model, newdata = online_data, type = my_type)
+    return(my_prediction)
+  }
+
+#colours for model 5 plot
+column_col <- hcl(c(270, 260, 250), 240, 30, 0.6)
+label_col <- hcl(200, 500, 100, 0.2)
+index_col <- hcl(150, 200, 50, 0.4)
+```
+
+\newpage
+## Model 6
+
+```{r, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE, fig.show = 'hide'}
+
+model3 <- make_tree(train_data, REVENUE ~ .)
+
+```
+
+\blandscape
+
+```{r fig.height=15, fig.width=25, echo=FALSE, warning=FALSE,results = 'hide', message = FALSE}
+ggparty(model3) + geom_edge() +                                          #plot model 3
+  geom_edge_label() +                                                    #numbers on splits
+  geom_node_splitvar(aes(col = factor(level))) +                         #colouring of nodes
+  geom_node_plot(gglist = list(
+    geom_bar(aes(x = "", fill = REVENUE), position = position_fill()),
+    xlab(""),
+    ylab("prob")
+  ), width = 1) +                                                        #boxplot creation
+  theme(
+    legend.position = "none",                                            #removal of right legend
+    plot.title = element_text(hjust = 0.5, size = 40, face = "bold")
+  ) + ggtitle("REVENUE Tree Model")                                    #title creation
+```
+
+\elandscape
+\newpage
+
+# Confusion Matrix on Chosen Model
+```{r}
+model_outcome <- function (model, data) {
+  model_prediction <- predict_tree(model, data)
+  accuracy <-
+    mean(model_prediction == data$REVENUE) #accuracy (a+d/(a+b+c+d))
+  confusiontable <-
+    table(Predicted = model_prediction, Actual = data$REVENUE) #confusion matrix
+  sensitivity <-
+    confusiontable[2, 2] / sum(confusiontable[, 2]) #predicted yes out of actual yes 
+  #(d/(b+d)) (True Positive Rate)
+  specificity <-
+    confusiontable[1, 1] / sum(confusiontable[1,]) #Predicted no out of actual no 
+  #(a/(a+c)) (True Negative Rate)
+  precision <-
+    confusiontable [2, 2] / sum(confusiontable[2,]) #The actual yes of all the predicted 
+  #yes (d/(d+c))
+  model_outcome <-
+    list(
+      Accuracy = accuracy,
+      Confusion_matrix = confusiontable,
+      sensitivity = sensitivity,
+      specificity = specificity,
+      precision = precision
+    )
+  model_outcome
+}
+tree_outcome_train <- model_outcome(model3, train_data)
+tree_df_train <-
+  data.frame(
+    Accuracy = 100 * tree_outcome_train$Accuracy,
+    Sensitivity = 100 * tree_outcome_train$sensitivity,
+    Specificity = 100 * tree_outcome_train$specificity,
+    Precision = 100 * tree_outcome_train$precision
+  )
+tree_outcome_test <- model_outcome(model3, test_data)
+tree_df_test <-
+  data.frame(
+    Accuracy = 100 * tree_outcome_test$Accuracy,
+    Sensitivity = 100 * tree_outcome_test$sensitivity,
+    Specificity = 100 * tree_outcome_test$specificity,
+    Precision = 100 * tree_outcome_test$precision
+  )
+
+modeloutcome <- data.frame(rbind(tree_df_train, tree_df_test))
+
+row.names(modeloutcome) <- c("TreeTrain", "TreeTest")
+```
+
+```{r echo=FALSE, warning=FALSE,results = 'hide', message = FALSE}
+modeloutcome %>% mutate_if(is.numeric, round, digits = 2) %>%
+  kable(caption = "Model Performance on Train and Test Data",
+        row.names = TRUE,
+        booktabs = TRUE) %>%
+  kable_styling(font_size = 10, full_width = F) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
+  column_spec(1, bold = TRUE) %>%
+  row_spec(2, bold = TRUE, background = "blue")
+
+saveRDS(model3, file="Tree Model New.RDS")
+```
